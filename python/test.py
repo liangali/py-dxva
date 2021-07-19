@@ -3,6 +3,7 @@ import sys
 sys.path.append(os.path.dirname(__file__)+'\\..\\build\\Debug')
 import pydxva as pyva
 
-print(pyva.add(1, 2))
+ret = pyva.create_device()
+print(ret)
 
 print('done')

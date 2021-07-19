@@ -8,8 +8,13 @@ else()
     message(FATAL_ERROR "#### ERROR: PYTHON_INCLUDE & PYBIND11_INCLUDE is not set")
 endif()
 
-include_directories ("C:\\Program Files\\Python39\\Include" "C:\\Users\\neptu\\AppData\\Roaming\\Python\\Python39\\site-packages\\pybind11\\include")
-link_directories("C:\\Program Files\\Python39\\libs")
+set (PYTHON_INCLUDE_DIR "C:\\Program Files\\Python39\\Include")
+set (PYBIND11_INCLUDE_DIR "C:\\Users\\neptu\\AppData\\Roaming\\Python\\Python39\\site-packages\\pybind11\\include")
+set (PYTHON_LIB_DIR "C:\\Program Files\\Python39\\libs")
+
+include_directories(${PYTHON_INCLUDE_DIR} ${PYBIND11_INCLUDE_DIR})
+link_directories(${PYTHON_LIB_DIR})
 add_library(pydxva SHARED test.cpp)
+target_link_libraries(pydxva d3d11)
 set_target_properties(pydxva PROPERTIES SUFFIX ".pyd")
 
