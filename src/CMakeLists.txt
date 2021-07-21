@@ -1,15 +1,13 @@
 cmake_minimum_required(VERSION 3.4)
 project(pydxva)
 
-if (DEFINED PYTHON_test)
-    message(STATUS "#### CMAKE: PYTHON_test is null")
+if (DEFINED PYTHON_INCLUDE AND DEFINED PYBIND11_INCLUDE AND DEFINED PYTHON_LIB)
+    message(STATUS "#### CMAKE: PYTHON_INCLUDE=" ${PYTHON_INCLUDE})
+    message(STATUS "#### CMAKE: PYBIND11_INCLUDE=" ${PYBIND11_INCLUDE})
+    message(STATUS "#### CMAKE: PYTHON_LIB=" ${PYTHON_LIB})
 else()
-    message(STATUS "#### CMAKE: PYTHON_test=" ${PYTHON_test})
+    message(FATAL  "#### CMAKE: PYTHON_INCLUDE/PYBIND11_INCLUDE/PYTHON_LIB is not set properly, run python build.py")
 endif()
-
-message(STATUS "#### CMAKE: PYTHON_INCLUDE=" ${PYTHON_INCLUDE})
-message(STATUS "#### CMAKE: PYBIND11_INCLUDE=" ${PYBIND11_INCLUDE})
-message(STATUS "#### CMAKE: PYTHON_LIB=" ${PYTHON_LIB})
 
 include_directories(${PYTHON_INCLUDE} ${PYBIND11_INCLUDE})
 link_directories(${PYTHON_LIB})

@@ -16,7 +16,7 @@ def run_cmake():
     print('#### python_include: ', python_include)
     print('#### pybidn11_include: ', pybidn11_include)
     print('#### python_lib: ', python_lib)
-    cmake_cmd  = 'cmake ' 
+    cmake_cmd  = 'cmake '
     cmake_cmd += '-DPYTHON_INCLUDE="%s" '%python_include
     cmake_cmd += '-DPYBIND11_INCLUDE="%s" '%pybidn11_include
     cmake_cmd += '-DPYTHON_LIB="%s" '%python_lib
