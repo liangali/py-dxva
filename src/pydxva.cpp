@@ -14,6 +14,8 @@ int pyCreateDevice()
 
     hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, levels, 1,
         D3D11_SDK_VERSION, &pD3D11Device, &fl, &pDeviceContext);
+
+    printf("#### pD3D11Device = %x, pDeviceContext = %x\n", pD3D11Device, pDeviceContext);
  
     return hr;
 }
