@@ -83,9 +83,24 @@ std::vector<std::string> pyGetProfiles()
             printf("#### ERROR: GetVideoDecoderProfile failed\n");
             continue;
         }
-        profile_list.push_back(getGUIDName(guid));
+        profile_list.push_back(GUID2Str(guid));
     }
     return profile_list;
+}
+
+void printGUID(GUID guid)
+{
+    char strGUID[256] = {};
+    sprintf_s(strGUID, 256, "%08x-%04x-%04x-%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x",
+        guid.Data1, guid.Data2, guid.Data3,
+        guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
+        guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+    printf("strGUID = %s\n", strGUID);
+}
+
+void pyTestGUID(std::string strGUID)
+{
+    printGUID(str2GUID(strGUID));
 }
 
 PYBIND11_MODULE(pydxva, m) {
@@ -97,4 +112,5 @@ PYBIND11_MODULE(pydxva, m) {
     m.def("release_texture2d", &pyReleaseTexture2D, "Release Texture2D");
 
     m.def("profiles", &pyGetProfiles, "Query Profiles");
+    m.def("test_guid", &pyTestGUID, "Test GUID");
 }

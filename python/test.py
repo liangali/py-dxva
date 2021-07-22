@@ -29,6 +29,9 @@ surf_staging = pyva.create_texture2d(np_from_struct(desc))
 pl = pyva.profiles()
 print('\n'.join(pl))
 
+for p in pl:
+    pyva.test_guid(p)
+
 pyva.release_texture2d(surf_rt)
 pyva.release_texture2d(surf_staging)
 pyva.close()

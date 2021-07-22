@@ -1,5 +1,8 @@
 #include "profile.h"
 
+#include <sstream>
+#include <iostream>
+
 static struct _InitGuidMap {
 
     _InitGuidMap()
@@ -56,20 +59,66 @@ static struct _InitGuidMap {
     }
 } g_initGuidMap;
 
-string getGUIDName(GUID guid)
+std::vector<std::string> splitStr(std::string str)
 {
-    map<GUID, string, GUIDComparer>::iterator it;
+    std::vector<std::string> str_list;
+    while (1) {
+        size_t pos = str.find("-");
+        if (pos == std::string::npos) {
+            str_list.push_back(str);
+            break;
+        }
+        str_list.push_back(str.substr(0, pos));
+        str = str.substr(pos + 1);
+    }
+    return str_list;
+}
+
+uint32_t str2Int(std::string str)
+{
+    uint32_t x; 
+    std::stringstream ss;
+    ss << std::hex << str;
+    ss >> x;
+    return x;
+}
+
+std::string GUID2Str(GUID guid)
+{
+    std::map<GUID, std::string, GUIDComparer>::iterator it;
 
     it = g_GuidMap.find(guid);
-    if (it != g_GuidMap.end())
-    {
+    if (it != g_GuidMap.end()) {
         return g_GuidMap[guid];
-    }
-    else
-    {
+    } else {
         char strGUID[256] = {};
-        sprintf_s(strGUID, 256, "%08x-%04x-%04x-%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x", guid.Data1, guid.Data2, guid.Data3, 
-            guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+        sprintf_s(strGUID, 256, "%08x-%04x-%04x-%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x", 
+            guid.Data1, guid.Data2, guid.Data3, 
+            guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], 
+            guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
         return strGUID;
     }
+}
+
+GUID str2GUID(std::string str)
+{
+    GUID result = {};
+    std::vector<std::string> str_list = splitStr(str);
+    if (str_list.size() == 11) {
+        result.Data1 = str2Int(str_list[0]);
+        result.Data2 = str2Int(str_list[1]);
+        result.Data3 = str2Int(str_list[2]);
+        for (size_t i = 0; i < 8; i++) {
+            result.Data4[i] = str2Int(str_list[3 + i]);
+        }
+    } else {
+        for (const auto & kv: g_GuidMap) {
+            if (str == kv.second) {
+                result = kv.first;
+                break;
+            }
+        }
+    }
+
+    return result;
 }
