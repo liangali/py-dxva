@@ -36,3 +36,23 @@ class D3D11VideoDecoderDesc(PStruct):
         ("SampleHeight", c_uint32),
         ("OutputFormat", c_uint32),
     ]
+
+class DXGISampleDesc(PStruct):
+    _fields_ = [
+        ("Count", c_uint32),
+        ("Quality", c_uint32),
+    ]
+
+class D3D11TextureDesc(PStruct):
+    _fields_ = [
+        ("Width", c_uint32),
+        ("Height", c_uint32),
+        ("MipLevels", c_uint32),
+        ("ArraySize", c_uint32),
+        ("Format", c_uint32),
+        ("SampleDesc", DXGISampleDesc),
+        ("Usage", c_uint32),
+        ("BindFlags", c_uint32),
+        ("CPUAccessFlags", c_uint32),
+        ("MiscFlags", c_uint32),
+    ]
