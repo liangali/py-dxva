@@ -60,8 +60,6 @@ uint64_t pyCreateTexture2D(py::array_t<uint8_t, py::array::c_style | py::array::
 
 void pyCloseDevice()
 {
-    printf("size of DXGI_FORMAT = %lld\n", sizeof(DXGI_FORMAT));
-    printf("size of D3D11_TEXTURE2D_DESC = %lld\n", sizeof(D3D11_TEXTURE2D_DESC));
     FREE_RESOURCE(pD3D11Device);
     FREE_RESOURCE(pDeviceContext);
     FREE_RESOURCE(pD3D11VideoDevice);

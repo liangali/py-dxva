@@ -159,3 +159,7 @@ class D3D11_RESOURCE_MISC:
     TILE_POOL	                    = 0x20000
     TILED	                        = 0x40000
     HW_PROTECTED	                = 0x80000
+
+class D3D11_CPU_ACCESS:
+    WRITE	= 0x10000
+    READ	= 0x20000
