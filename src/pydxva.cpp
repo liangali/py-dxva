@@ -4,9 +4,14 @@
 
 namespace py = pybind11;
 
+#include <vector>
+#include <string>
+
 #include <windows.h>
 #include <D3D11.h>
 #include <dxva.h>
+
+#include "profile.h"
 
 static HRESULT hr = S_OK;
 static ID3D11Device* pD3D11Device = NULL;
@@ -45,10 +50,6 @@ uint64_t pyCreateTexture2D(py::array_t<uint8_t, py::array::c_style | py::array::
 
     ID3D11Texture2D *pTexture2D = nullptr;
     D3D11_TEXTURE2D_DESC* pDesc = (D3D11_TEXTURE2D_DESC*)inparams.data();
-    // printf("#### pydxva: Width = %d, Height = %d, MipLevels = %d, ArraySize = %d\n", 
-        //pDesc->Width, pDesc->Height, pDesc->MipLevels, pDesc->ArraySize);
-    // printf("#### pydxva: Format = %x, Usage = %x, BindFlags = %x, CPUAccessFlags = %x, MiscFlags = %x, \n", 
-    //     pDesc->Format, pDesc->Usage, pDesc->BindFlags, pDesc->CPUAccessFlags, pDesc->MiscFlags);
     hr = pD3D11Device->CreateTexture2D(pDesc, NULL, &pTexture2D);
     if (!SUCCEEDED(hr)) {
         printf("#### ERROR: CreateTexture2D failed\n");
@@ -70,6 +71,23 @@ void pyReleaseTexture2D(uint64_t ptr)
     ((ID3D11Texture2D *)ptr)->Release();
 }
 
+std::vector<std::string> pyGetProfiles()
+{
+    std::vector<std::string> profile_list;
+    UINT profileCount = pD3D11VideoDevice->GetVideoDecoderProfileCount();
+    for (UINT i = 0; i < profileCount; i++)
+    {
+        GUID guid = {};
+        hr = pD3D11VideoDevice->GetVideoDecoderProfile(i, &guid);
+        if (!SUCCEEDED(hr)) {
+            printf("#### ERROR: GetVideoDecoderProfile failed\n");
+            continue;
+        }
+        profile_list.push_back(getGUIDName(guid));
+    }
+    return profile_list;
+}
+
 PYBIND11_MODULE(pydxva, m) {
     m.doc() = "dxva python binding library"; 
     m.def("init", &pyCreateDevice, "Create Device");
@@ -77,4 +95,6 @@ PYBIND11_MODULE(pydxva, m) {
 
     m.def("create_texture2d", &pyCreateTexture2D, "Create Texture2D");
     m.def("release_texture2d", &pyReleaseTexture2D, "Release Texture2D");
+
+    m.def("profiles", &pyGetProfiles, "Query Profiles");
 }

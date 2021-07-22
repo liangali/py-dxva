@@ -26,6 +26,9 @@ desc.CPUAccessFlags = D3D11_CPU_ACCESS.READ
 desc.MiscFlags = 0
 surf_staging = pyva.create_texture2d(np_from_struct(desc))
 
+pl = pyva.profiles()
+print('\n'.join(pl))
+
 pyva.release_texture2d(surf_rt)
 pyva.release_texture2d(surf_staging)
 pyva.close()

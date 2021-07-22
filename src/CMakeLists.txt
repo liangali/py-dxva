@@ -11,7 +11,7 @@ endif()
 
 include_directories(${PYTHON_INCLUDE} ${PYBIND11_INCLUDE})
 link_directories(${PYTHON_LIB})
-add_library(pydxva SHARED pydxva.cpp)
+add_library(pydxva SHARED pydxva.cpp profile.cpp)
 target_link_libraries(pydxva d3d11)
 set_target_properties(pydxva PROPERTIES SUFFIX ".pyd")
 
