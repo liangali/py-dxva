@@ -103,6 +103,51 @@ void pyTestGUID(std::string strGUID)
     printGUID(str2GUID(strGUID));
 }
 
+uint64_t pyCreateVideoDecoder(std::string guid, uint32_t w, uint32_t h, uint64_t fmt)
+{
+    ID3D11VideoDecoder *pVideoDecoder = NULL;
+    D3D11_VIDEO_DECODER_DESC decoderDesc = { 0 };
+    decoderDesc.Guid = str2GUID(guid);
+    decoderDesc.SampleWidth = w;
+    decoderDesc.SampleHeight = h;
+    decoderDesc.OutputFormat = (DXGI_FORMAT)fmt;
+    D3D11_VIDEO_DECODER_CONFIG config = { 0 };
+    config.ConfigBitstreamRaw = 1; // 0: long format; 1: short format
+    hr = pD3D11VideoDevice->CreateVideoDecoder(&decoderDesc, &config, &pVideoDecoder);
+    if (!SUCCEEDED(hr)) {
+        printf("#### ERROR: CreateVideoDecoder failed\n");
+        return 0;
+    }
+
+    return (uint64_t)pVideoDecoder;
+}
+
+uint64_t pyCreateVideoDecoder2(py::array_t<uint8_t, py::array::c_style | py::array::forcecast> desc_data, 
+    py::array_t<uint8_t, py::array::c_style | py::array::forcecast> cfg_data)
+{
+    if (!desc_data.data() || desc_data.size() != sizeof(D3D11_VIDEO_DECODER_DESC) ||
+        !cfg_data.data() || cfg_data.size() != sizeof(D3D11_VIDEO_DECODER_CONFIG)) {
+        printf("#### ERROR: invalid data\n");
+        return 0;
+    }
+
+    ID3D11VideoDecoder *pVideoDecoder = nullptr;
+    D3D11_VIDEO_DECODER_DESC* decoderDesc = (D3D11_VIDEO_DECODER_DESC*)desc_data.data();
+    D3D11_VIDEO_DECODER_CONFIG* config = (D3D11_VIDEO_DECODER_CONFIG*)cfg_data.data();
+    hr = pD3D11VideoDevice->CreateVideoDecoder(decoderDesc, config, &pVideoDecoder);
+    if (!SUCCEEDED(hr)) {
+        printf("#### ERROR: CreateVideoDecoder failed\n");
+        return 0;
+    }
+
+    return (uint64_t)pVideoDecoder;
+}
+
+void pyReleaseVideoDecoder(uint64_t ptr)
+{
+    ((ID3D11VideoDecoder *)ptr)->Release();
+}
+
 PYBIND11_MODULE(pydxva, m) {
     m.doc() = "dxva python binding library"; 
     m.def("init", &pyCreateDevice, "Create Device");
@@ -110,6 +155,10 @@ PYBIND11_MODULE(pydxva, m) {
 
     m.def("create_texture2d", &pyCreateTexture2D, "Create Texture2D");
     m.def("release_texture2d", &pyReleaseTexture2D, "Release Texture2D");
+
+    m.def("create_decoder", &pyCreateVideoDecoder, "Create Video Decoder");
+    m.def("create_decoder2", &pyCreateVideoDecoder2, "Create Video Decoder");
+    m.def("release_decoder", &pyReleaseVideoDecoder, "Release Video Decoder");
 
     m.def("profiles", &pyGetProfiles, "Query Profiles");
     m.def("test_guid", &pyTestGUID, "Test GUID");
