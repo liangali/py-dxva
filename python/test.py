@@ -6,8 +6,13 @@ import pydxva as pyva
 from vadef.common import *
 from vadef.enum import *
 
+def check_error(hr):
+    if hr < 0:
+        print("ERROR: function failed, hr =%x"%hr)
+        exit()
+
 w, h, p = 320, 240, 'DXVA_ModeH264_E'
-pyva.init()
+check_error(pyva.init())
 
 dec_cfg = D3D11VideoDecoderConfig()
 

@@ -17,6 +17,7 @@ static HRESULT hr = S_OK;
 static ID3D11Device* pD3D11Device = NULL;
 static ID3D11DeviceContext* pDeviceContext = NULL;
 static ID3D11VideoDevice * pD3D11VideoDevice = NULL;
+static ID3D11VideoContext* pVideoContext = NULL;
 
 #define CHECK_SUCCESS(hr, msg) \
     if (!SUCCEEDED(hr)) { printf("ERROR: Failed to call %s\n", msg); return -1; }
@@ -37,6 +38,10 @@ HRESULT pyCreateDevice()
     hr = pD3D11Device->QueryInterface(&pD3D11VideoDevice);
     CHECK_SUCCESS(hr, "QueryInterface");
     printf("#### pD3D11VideoDevice = %llx\n", (uint64_t)pD3D11VideoDevice);
+
+    hr = pDeviceContext->QueryInterface(&pVideoContext);
+    CHECK_SUCCESS(hr, "QueryInterface");
+    printf("#### pVideoContext = %llx\n", (uint64_t)pVideoContext);
 
     return hr;
 }
