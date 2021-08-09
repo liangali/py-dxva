@@ -43,7 +43,7 @@ HRESULT pyCreateDevice()
 
 uint64_t pyCreateTexture2D(py::array_t<uint8_t, py::array::c_style | py::array::forcecast> inparams)
 {
-    if (!inparams.data() || inparams.size() < sizeof(D3D11_TEXTURE2D_DESC)) {
+    if (!inparams.data() || inparams.size() != sizeof(D3D11_TEXTURE2D_DESC)) {
         printf("#### ERROR: invalid input params\n");
         return 0;
     }

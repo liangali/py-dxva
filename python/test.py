@@ -6,7 +6,7 @@ import pydxva as pyva
 from vadef.common import *
 from vadef.enum import *
 
-w, h = 320, 240
+w, h, p = 320, 240, 'DXVA_ModeH264_E'
 pyva.init()
 
 dec_cfg = D3D11VideoDecoderConfig()
@@ -22,12 +22,14 @@ print('\n'.join(pl))
 
 # for p in pl: pyva.test_guid(p)
 
-decoder = pyva.create_decoder('DXVA_ModeH264_E', w, h, DXGI_FORMAT.NV12)
-print('decoder = %x'%decoder)
-
-pyva.release_texture2d(surf_rt)
+if p in pl:
+    print('#### find profile %s'%p)
+    decoder = pyva.create_decoder(p, w, h, DXGI_FORMAT.NV12)
+    print('decoder = %x'%decoder)
+    pyva.release_decoder(decoder)
+    
 pyva.release_texture2d(surf_staging)
-pyva.release_decoder(decoder)
+pyva.release_texture2d(surf_rt)
 
 pyva.close()
 print('done')
