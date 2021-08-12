@@ -31,9 +31,11 @@ if __name__ == '__main__':
     if len(sys.argv)>1:
         if sys.argv[1] == 'clean':
             run_clean()
+        elif sys.argv[1] == 'gen':
+            run_cmake()
         elif sys.argv[1] == 'all':
             run_cmake()
             run_vsbuild()
     else:
-        run_cmake()
+        run_vsbuild()
     print('done')
