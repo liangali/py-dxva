@@ -46,6 +46,13 @@ HRESULT pyCreateDevice()
     return hr;
 }
 
+void pyCloseDevice()
+{
+    FREE_RESOURCE(pD3D11Device);
+    FREE_RESOURCE(pDeviceContext);
+    FREE_RESOURCE(pD3D11VideoDevice);
+}
+
 uint64_t pyCreateTexture2D(py::array_t<uint8_t, py::array::c_style | py::array::forcecast> inparams)
 {
     if (!inparams.data() || inparams.size() != sizeof(D3D11_TEXTURE2D_DESC)) {
@@ -64,16 +71,33 @@ uint64_t pyCreateTexture2D(py::array_t<uint8_t, py::array::c_style | py::array::
     return (uint64_t)pTexture2D;
 }
 
-void pyCloseDevice()
-{
-    FREE_RESOURCE(pD3D11Device);
-    FREE_RESOURCE(pDeviceContext);
-    FREE_RESOURCE(pD3D11VideoDevice);
-}
-
 void pyReleaseTexture2D(uint64_t ptr)
 {
     ((ID3D11Texture2D *)ptr)->Release();
+}
+
+uint64_t pyCreateVideoDecoderOutputView(uint64_t dec_rt, std::string guid)
+{
+    if (!dec_rt) {
+        printf("#### ERROR in %s:%d: invalid input params\n", __FUNCTION__, __LINE__);
+        return 0;
+    }
+    ID3D11VideoDecoderOutputView *pDecodeOutputView = NULL;
+    D3D11_VIDEO_DECODER_OUTPUT_VIEW_DESC viewDesc = { 0 };
+    viewDesc.DecodeProfile = str2GUID(guid);
+    viewDesc.ViewDimension = D3D11_VDOV_DIMENSION_TEXTURE2D;
+    hr = pD3D11VideoDevice->CreateVideoDecoderOutputView((ID3D11Texture2D*)dec_rt, &viewDesc, &pDecodeOutputView);
+    if (!SUCCEEDED(hr)) {
+        printf("#### ERROR in %s:%d: CreateVideoDecoderOutputView failed\n", __FUNCTION__, __LINE__);
+        return 0;
+    }
+
+    return (uint64_t)pDecodeOutputView;
+}
+
+void pyReleaseVDOutputView(uint64_t ptr)
+{
+    ((ID3D11VideoDecoderOutputView *)ptr)->Release();
 }
 
 std::vector<std::string> pyGetProfiles()
@@ -160,6 +184,9 @@ PYBIND11_MODULE(pydxva, m) {
 
     m.def("create_texture2d", &pyCreateTexture2D, "Create Texture2D");
     m.def("release_texture2d", &pyReleaseTexture2D, "Release Texture2D");
+
+    m.def("create_decoutview", &pyCreateVideoDecoderOutputView, "Create Texture2D");
+    m.def("release_decoutview", &pyReleaseVDOutputView, "Release Texture2D");
 
     m.def("create_decoder", &pyCreateVideoDecoder, "Create Video Decoder");
     m.def("create_decoder2", &pyCreateVideoDecoder2, "Create Video Decoder");

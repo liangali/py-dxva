@@ -22,6 +22,9 @@ surf_rt = pyva.create_texture2d(np_from_struct(td))
 td = D3D11TextureDesc(w, h, 1, 1, DXGI_FORMAT.NV12, DXGISampleDesc(1, 0), D3D11_USAGE.STAGING, 0, D3D11_CPU_ACCESS.READ, 0)
 surf_staging = pyva.create_texture2d(np_from_struct(td))
 
+outview = pyva.create_decoutview(surf_rt, p)
+print('outview = %x'%outview)
+
 pl = pyva.profiles()
 print('\n'.join(pl))
 
@@ -32,7 +35,8 @@ if p in pl:
     decoder = pyva.create_decoder(p, w, h, DXGI_FORMAT.NV12)
     print('decoder = %x'%decoder)
     pyva.release_decoder(decoder)
-    
+
+pyva.release_decoutview(outview)
 pyva.release_texture2d(surf_staging)
 pyva.release_texture2d(surf_rt)
 
