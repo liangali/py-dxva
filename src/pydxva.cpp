@@ -13,6 +13,8 @@ namespace py = pybind11;
 
 #include "profile.h"
 
+typedef py::array_t<uint8_t, py::array::c_style | py::array::forcecast> PyArray;
+
 static HRESULT hr = S_OK;
 static ID3D11Device* pD3D11Device = NULL;
 static ID3D11DeviceContext* pDeviceContext = NULL;
@@ -177,6 +179,74 @@ void pyReleaseVideoDecoder(uint64_t ptr)
     ((ID3D11VideoDecoder *)ptr)->Release();
 }
 
+HRESULT pyDecoderBeginFrame(uint64_t decoder, uint64_t outview)
+{
+    if (!decoder || !outview) {
+        printf("#### ERROR in %s:%d: invalid input params\n", __FUNCTION__, __LINE__);
+        return -1;
+    }
+
+    ID3D11VideoDecoder *pVideoDecoder = (ID3D11VideoDecoder*)decoder;
+    ID3D11VideoDecoderOutputView *pDecodeOutputView = (ID3D11VideoDecoderOutputView*)outview;
+    hr = pVideoContext->DecoderBeginFrame(pVideoDecoder, pDecodeOutputView, 0, 0);
+    if (!SUCCEEDED(hr)) {
+        printf("#### ERROR in %s:%d: DecoderBeginFrame failed\n", __FUNCTION__, __LINE__);
+        return hr;
+    }
+
+    return hr;
+}
+
+HRESULT pySubmitDecoderBuffers(uint64_t decoder, std::vector<std::pair<int32_t, PyArray>> buf_list)
+{
+    ID3D11VideoDecoder *pVideoDecoder = (ID3D11VideoDecoder*)decoder;
+    // Prepare DXVA buffers for decoding
+    uint32_t sizeDesc = sizeof(D3D11_VIDEO_DECODER_BUFFER_DESC) * (uint32_t)buf_list.size();
+    D3D11_VIDEO_DECODER_BUFFER_DESC *descDecBuffers = new D3D11_VIDEO_DECODER_BUFFER_DESC[buf_list.size()];
+    memset(descDecBuffers, 0, sizeDesc);
+    for (uint32_t i = 0; i < buf_list.size(); i++)
+    {
+        BYTE* buffer = 0;
+        uint32_t bufferSize = 0;
+        descDecBuffers[i].BufferIndex = i;
+        descDecBuffers[i].BufferType = (D3D11_VIDEO_DECODER_BUFFER_TYPE)buf_list[i].first;
+        descDecBuffers[i].DataSize = (uint32_t)buf_list[i].second.size();
+
+        hr = pVideoContext->GetDecoderBuffer(pVideoDecoder, descDecBuffers[i].BufferType, &bufferSize, reinterpret_cast<void**>(&buffer));
+        CHECK_SUCCESS(hr, "GetDecoderBuffer");
+
+        uint32_t copySize = min(bufferSize, descDecBuffers[i].DataSize);
+        memcpy_s(buffer, copySize, buf_list[i].second.data(), copySize);
+
+        hr = pVideoContext->ReleaseDecoderBuffer(pVideoDecoder, descDecBuffers[i].BufferType);
+        CHECK_SUCCESS(hr, "ReleaseDecoderBuffer");
+    }
+
+    // Submit decode workload to GPU
+    hr = pVideoContext->SubmitDecoderBuffers(pVideoDecoder, (uint32_t)buf_list.size(), descDecBuffers);
+    CHECK_SUCCESS(hr, "SubmitDecoderBuffers");
+    delete[] descDecBuffers;
+
+    return hr;
+}
+
+HRESULT pyDecoderEndFrame(uint64_t decoder)
+{
+    if (!decoder) {
+        printf("#### ERROR in %s:%d: invalid input params\n", __FUNCTION__, __LINE__);
+        return -1;
+    }
+
+    ID3D11VideoDecoder *pVideoDecoder = (ID3D11VideoDecoder*)decoder;
+    hr = pVideoContext->DecoderEndFrame(pVideoDecoder);
+    if (!SUCCEEDED(hr)) {
+        printf("#### ERROR in %s:%d: DecoderEndFrame failed\n", __FUNCTION__, __LINE__);
+        return hr;
+    }
+
+    return hr;
+}
+
 PYBIND11_MODULE(pydxva, m) {
     m.doc() = "dxva python binding library"; 
     m.def("init", &pyCreateDevice, "Create Device");
@@ -185,13 +255,23 @@ PYBIND11_MODULE(pydxva, m) {
     m.def("create_texture2d", &pyCreateTexture2D, "Create Texture2D");
     m.def("release_texture2d", &pyReleaseTexture2D, "Release Texture2D");
 
-    m.def("create_decoutview", &pyCreateVideoDecoderOutputView, "Create Texture2D");
-    m.def("release_decoutview", &pyReleaseVDOutputView, "Release Texture2D");
+    m.def("create_decoutview", &pyCreateVideoDecoderOutputView, "Create VideoDecoderOutputView");
+    m.def("release_decoutview", &pyReleaseVDOutputView, "Release VideoDecoderOutputView");
 
     m.def("create_decoder", &pyCreateVideoDecoder, "Create Video Decoder");
     m.def("create_decoder2", &pyCreateVideoDecoder2, "Create Video Decoder");
     m.def("release_decoder", &pyReleaseVideoDecoder, "Release Video Decoder");
 
+    m.def("begin_frame", &pyDecoderBeginFrame, "Decoder Begin Frame");
+    m.def("submit_buffers", &pySubmitDecoderBuffers, "Submit Decoder Buffers");
+    m.def("end_frame", &pyDecoderEndFrame, "Decoder End Frame");
+
     m.def("profiles", &pyGetProfiles, "Query Profiles");
     m.def("test_guid", &pyTestGUID, "Test GUID");
+
+    m.def("test_func", [](std::pair<int, PyArray> p) {
+        int a = p.first;
+        int b = (int)p.second.size();
+        uint8_t* ptr = (uint8_t*)p.second.data();
+    });
 }

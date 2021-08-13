@@ -11,7 +11,7 @@ def check_error(hr):
         print("ERROR: function failed, hr =%x"%hr)
         exit()
 
-w, h, p = 320, 240, 'DXVA_ModeH264_E'
+w, h, p, dec_bufs = 320, 240, 'DXVA_ModeH264_E', []
 check_error(pyva.init())
 
 dec_cfg = D3D11VideoDecoderConfig()
@@ -30,10 +30,20 @@ print('\n'.join(pl))
 
 # for p in pl: pyva.test_guid(p)
 
+dec_bufs.append((D3D11DecBufType.PICTURE_PARAMETERS, np.fromfile('data/dec/pic.bin', dtype=np.uint8)))
+dec_bufs.append((D3D11DecBufType.SLICE_CONTROL, np.fromfile('data/dec/slc.bin', dtype=np.uint8)))
+dec_bufs.append((D3D11DecBufType.INVERSE_QUANTIZATION_MATRIX, np.fromfile('data/dec/iq.bin', dtype=np.uint8)))
+dec_bufs.append((D3D11DecBufType.BITSTREAM, np.fromfile('data/dec/bs.bin', dtype=np.uint8)))
+
 if p in pl:
     print('#### find profile %s'%p)
     decoder = pyva.create_decoder(p, w, h, DXGI_FORMAT.NV12)
     print('decoder = %x'%decoder)
+    
+    pyva.begin_frame(decoder, outview)
+    pyva.submit_buffers(decoder, dec_bufs)
+    pyva.end_frame(decoder)
+
     pyva.release_decoder(decoder)
 
 pyva.release_decoutview(outview)

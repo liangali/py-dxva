@@ -163,3 +163,14 @@ class D3D11_RESOURCE_MISC:
 class D3D11_CPU_ACCESS:
     WRITE	= 0x10000
     READ	= 0x20000
+
+class D3D11DecBufType:
+    PICTURE_PARAMETERS	        = 0
+    MACROBLOCK_CONTROL	        = 1
+    RESIDUAL_DIFFERENCE	        = 2
+    DEBLOCKING_CONTROL	        = 3
+    INVERSE_QUANTIZATION_MATRIX = 4
+    SLICE_CONTROL	            = 5
+    BITSTREAM	                = 6
+    MOTION_VECTOR	            = 7
+    FILM_GRAIN	                = 8
