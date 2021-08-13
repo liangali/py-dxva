@@ -16,13 +16,8 @@ def check_error(hr):
 w, h, p, dec_bufs = 320, 240, 'DXVA_ModeH264_E', []
 check_error(pyva.init())
 
-dec_cfg = D3D11VideoDecoderConfig()
-
 td = D3D11TextureDesc(w, h, 1, 1, DXGI_FORMAT.NV12, DXGISampleDesc(1, 0), D3D11_USAGE.DEFAULT, D3D11_BIND.DECODER, 0, D3D11_RESOURCE_MISC.SHARED)
 surf_rt = pyva.create_texture2d(np_from_struct(td))
-
-td = D3D11TextureDesc(w, h, 1, 1, DXGI_FORMAT.NV12, DXGISampleDesc(1, 0), D3D11_USAGE.STAGING, 0, D3D11_CPU_ACCESS.READ, 0)
-surf_staging = pyva.create_texture2d(np_from_struct(td))
 
 outview = pyva.create_decoutview(surf_rt, p)
 print('outview = %x'%outview)
@@ -33,9 +28,9 @@ print('\n'.join(pl))
 # for p in pl: pyva.test_guid(p)
 
 dec_bufs.append((D3D11DecBufType.PICTURE_PARAMETERS, np.fromfile('data/dec/pic.bin', dtype=np.uint8)))
-dec_bufs.append((D3D11DecBufType.SLICE_CONTROL, np.fromfile('data/dec/slc.bin', dtype=np.uint8)))
-dec_bufs.append((D3D11DecBufType.INVERSE_QUANTIZATION_MATRIX, np.fromfile('data/dec/iq.bin', dtype=np.uint8)))
-dec_bufs.append((D3D11DecBufType.BITSTREAM, np.fromfile('data/dec/bs.bin', dtype=np.uint8)))
+dec_bufs.append((D3D11DecBufType.SLICE_CONTROL,      np.fromfile('data/dec/slc.bin', dtype=np.uint8)))
+dec_bufs.append((D3D11DecBufType.IQ_MATRIX,          np.fromfile('data/dec/iq.bin',  dtype=np.uint8)))
+dec_bufs.append((D3D11DecBufType.BITSTREAM,          np.fromfile('data/dec/bs.bin',  dtype=np.uint8)))
 
 if p in pl:
     print('#### find profile %s'%p)
@@ -54,7 +49,6 @@ if p in pl:
     pyva.release_decoder(decoder)
 
 pyva.release_decoutview(outview)
-pyva.release_texture2d(surf_staging)
 pyva.release_texture2d(surf_rt)
 
 pyva.close()

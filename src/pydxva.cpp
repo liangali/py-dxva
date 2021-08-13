@@ -302,12 +302,10 @@ py::array pyReadSurface(uint64_t surf)
         return out_array;
     }
 
-    printf("####: RowPitch = %d, pData = %llx\n", subRes.RowPitch, (uint64_t)subRes.pData);
     size_t bufsize = 0, ndim = 0;
     std::vector<uint8_t> bufdata;
     std::vector<size_t> shape;
     std::vector<size_t> strides;
-    
     switch (desc.Format)
     {
     case DXGI_FORMAT_NV12:

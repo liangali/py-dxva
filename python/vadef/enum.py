@@ -169,7 +169,7 @@ class D3D11DecBufType:
     MACROBLOCK_CONTROL	        = 1
     RESIDUAL_DIFFERENCE	        = 2
     DEBLOCKING_CONTROL	        = 3
-    INVERSE_QUANTIZATION_MATRIX = 4
+    IQ_MATRIX = 4
     SLICE_CONTROL	            = 5
     BITSTREAM	                = 6
     MOTION_VECTOR	            = 7
