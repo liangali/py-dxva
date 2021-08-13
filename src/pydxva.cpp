@@ -199,6 +199,11 @@ HRESULT pyDecoderBeginFrame(uint64_t decoder, uint64_t outview)
 
 HRESULT pySubmitDecoderBuffers(uint64_t decoder, std::vector<std::pair<int32_t, PyArray>> buf_list)
 {
+    if (!decoder || buf_list.size() <= 0) {
+        printf("#### ERROR in %s:%d: invalid input params\n", __FUNCTION__, __LINE__);
+        return -1;
+    }
+
     ID3D11VideoDecoder *pVideoDecoder = (ID3D11VideoDecoder*)decoder;
     // Prepare DXVA buffers for decoding
     uint32_t sizeDesc = sizeof(D3D11_VIDEO_DECODER_BUFFER_DESC) * (uint32_t)buf_list.size();
@@ -213,18 +218,27 @@ HRESULT pySubmitDecoderBuffers(uint64_t decoder, std::vector<std::pair<int32_t, 
         descDecBuffers[i].DataSize = (uint32_t)buf_list[i].second.size();
 
         hr = pVideoContext->GetDecoderBuffer(pVideoDecoder, descDecBuffers[i].BufferType, &bufferSize, reinterpret_cast<void**>(&buffer));
-        CHECK_SUCCESS(hr, "GetDecoderBuffer");
+        if (!SUCCEEDED(hr)) {
+            printf("#### ERROR in %s:%d: GetDecoderBuffer failed\n", __FUNCTION__, __LINE__);
+            return hr;
+        }
 
         uint32_t copySize = min(bufferSize, descDecBuffers[i].DataSize);
         memcpy_s(buffer, copySize, buf_list[i].second.data(), copySize);
 
         hr = pVideoContext->ReleaseDecoderBuffer(pVideoDecoder, descDecBuffers[i].BufferType);
-        CHECK_SUCCESS(hr, "ReleaseDecoderBuffer");
+        if (!SUCCEEDED(hr)) {
+            printf("#### ERROR in %s:%d: ReleaseDecoderBuffer failed\n", __FUNCTION__, __LINE__);
+            return hr;
+        }
     }
 
     // Submit decode workload to GPU
     hr = pVideoContext->SubmitDecoderBuffers(pVideoDecoder, (uint32_t)buf_list.size(), descDecBuffers);
-    CHECK_SUCCESS(hr, "SubmitDecoderBuffers");
+    if (!SUCCEEDED(hr)) {
+        printf("#### ERROR in %s:%d: SubmitDecoderBuffers failed\n", __FUNCTION__, __LINE__);
+        return hr;
+    }
     delete[] descDecBuffers;
 
     return hr;
@@ -247,6 +261,74 @@ HRESULT pyDecoderEndFrame(uint64_t decoder)
     return hr;
 }
 
+py::array pyReadSurface(uint64_t surf)
+{
+    py::array out_array;
+
+    if (!surf) {
+        printf("#### ERROR in %s:%d: invalid input params\n", __FUNCTION__, __LINE__);
+        return out_array;
+    }
+
+    D3D11_TEXTURE2D_DESC desc = {};
+    ID3D11Texture2D* rt_surf = (ID3D11Texture2D*)surf;
+    rt_surf->GetDesc(&desc);
+
+    ID3D11Texture2D *staging_surf = nullptr;
+    D3D11_TEXTURE2D_DESC descStaging = { 0 };
+    descStaging.Width = desc.Width;
+    descStaging.Height = desc.Height;
+    descStaging.MipLevels = 1;
+    descStaging.ArraySize = 1;
+    descStaging.Format = desc.Format;
+    descStaging.SampleDesc = { 1, 0 }; // DXGI_SAMPLE_DESC 
+    descStaging.Usage = D3D11_USAGE_STAGING; // D3D11_USAGE 
+    descStaging.BindFlags = 0;
+    descStaging.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    descStaging.MiscFlags = 0;
+    hr = pD3D11Device->CreateTexture2D(&descStaging, nullptr, &staging_surf);
+    if (!SUCCEEDED(hr)) {
+        printf("#### ERROR in %s:%d: CreateTexture2D failed\n", __FUNCTION__, __LINE__);
+        return out_array;
+    }
+
+    D3D11_BOX box = {0, 0, 0, desc.Width, desc.Height, 1};
+    pDeviceContext->CopySubresourceRegion(staging_surf, 0, 0, 0, 0, rt_surf, 0, &box);
+
+    D3D11_MAPPED_SUBRESOURCE subRes = {};
+    hr = pDeviceContext->Map(staging_surf, 0, D3D11_MAP_READ, 0, &subRes);
+    if (!SUCCEEDED(hr)) {
+        printf("#### ERROR in %s:%d: Map failed\n", __FUNCTION__, __LINE__);
+        return out_array;
+    }
+
+    printf("####: RowPitch = %d, pData = %llx\n", subRes.RowPitch, (uint64_t)subRes.pData);
+    size_t bufsize = 0, ndim = 0;
+    std::vector<uint8_t> bufdata;
+    std::vector<size_t> shape;
+    std::vector<size_t> strides;
+    
+    switch (desc.Format)
+    {
+    case DXGI_FORMAT_NV12:
+        ndim = 2;
+        shape = {(desc.Height + desc.Height / 2), subRes.RowPitch};
+        strides = {subRes.RowPitch, sizeof(uint8_t)};
+        bufsize = subRes.RowPitch * (desc.Height + desc.Height / 2);
+        bufdata.resize(bufsize, 0);
+        CopyMemory(bufdata.data(), subRes.pData, bufsize);
+        out_array = py::array(py::buffer_info(bufdata.data(), sizeof(uint8_t), py::format_descriptor<uint8_t>::format(), ndim, shape, strides));
+        break;
+    default:
+        printf("#### ERROR: Unsupported surface format %d\n", desc.Format);
+        break;
+    } 
+
+    pDeviceContext->Unmap(staging_surf, 0);
+    staging_surf->Release();
+    return out_array;
+}
+
 PYBIND11_MODULE(pydxva, m) {
     m.doc() = "dxva python binding library"; 
     m.def("init", &pyCreateDevice, "Create Device");
@@ -266,12 +348,18 @@ PYBIND11_MODULE(pydxva, m) {
     m.def("submit_buffers", &pySubmitDecoderBuffers, "Submit Decoder Buffers");
     m.def("end_frame", &pyDecoderEndFrame, "Decoder End Frame");
 
+    m.def("read_surface", &pyReadSurface, "Read Surface Data");
+
     m.def("profiles", &pyGetProfiles, "Query Profiles");
     m.def("test_guid", &pyTestGUID, "Test GUID");
-
-    m.def("test_func", [](std::pair<int, PyArray> p) {
-        int a = p.first;
-        int b = (int)p.second.size();
-        uint8_t* ptr = (uint8_t*)p.second.data();
+    m.def("test_func", []() {
+        int w = 4, h = 3;
+        std::vector<uint32_t> dst(w*h, 1);
+        ssize_t ndim = 2;
+        std::vector<ssize_t> shape = {h, w};
+        std::vector<ssize_t> strides = {w , sizeof(uint32_t)};
+        py::buffer_info buf_info = py::buffer_info(dst.data(), sizeof(uint32_t), py::format_descriptor<uint32_t>::format(), ndim, shape, strides);
+        py::array out_array = py::array(buf_info);
+        return out_array;
     });
 }

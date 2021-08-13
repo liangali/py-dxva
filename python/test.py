@@ -1,5 +1,7 @@
 import os
 import sys
+import cv2
+
 sys.path.append(os.path.dirname(__file__))
 sys.path.append(os.path.dirname(__file__)+'\\..\\build\\Debug')
 import pydxva as pyva
@@ -43,6 +45,11 @@ if p in pl:
     pyva.begin_frame(decoder, outview)
     pyva.submit_buffers(decoder, dec_bufs)
     pyva.end_frame(decoder)
+
+    # dump decode output
+    out_nv12 = pyva.read_surface(surf_rt)
+    out_bgr = cv2.cvtColor(out_nv12, cv2.COLOR_YUV2BGR_NV12)
+    cv2.imwrite('../../dec_out.bmp', out_bgr)
 
     pyva.release_decoder(decoder)
 
