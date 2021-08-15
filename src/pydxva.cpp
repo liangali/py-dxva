@@ -6,6 +6,7 @@ namespace py = pybind11;
 
 #include <vector>
 #include <string>
+#include <fstream>
 
 #include <windows.h>
 #include <D3D11.h>
@@ -26,6 +27,14 @@ static ID3D11VideoContext* pVideoContext = NULL;
 
 #define FREE_RESOURCE(res) \
     if(res) {res->Release(); res = NULL;}
+
+void dumpBuffer(char* name, uint8_t* buf, size_t size)
+{
+    std::ofstream of;
+    of.open(name, std::ios::binary);
+    of.write((const char*)buf, size);
+    of.close();
+}
 
 HRESULT pyCreateDevice()
 {
@@ -53,6 +62,7 @@ void pyCloseDevice()
     FREE_RESOURCE(pD3D11Device);
     FREE_RESOURCE(pDeviceContext);
     FREE_RESOURCE(pD3D11VideoDevice);
+    FREE_RESOURCE(pVideoContext);
 }
 
 uint64_t pyCreateTexture2D(py::array_t<uint8_t, py::array::c_style | py::array::forcecast> inparams)
@@ -143,7 +153,7 @@ uint64_t pyCreateVideoDecoder(std::string guid, uint32_t w, uint32_t h, uint64_t
     decoderDesc.SampleHeight = h;
     decoderDesc.OutputFormat = (DXGI_FORMAT)fmt;
     D3D11_VIDEO_DECODER_CONFIG config = { 0 };
-    config.ConfigBitstreamRaw = 1; // 0: long format; 1: short format
+    config.ConfigBitstreamRaw = 2; // 0: long format; 1: short format
     hr = pD3D11VideoDevice->CreateVideoDecoder(&decoderDesc, &config, &pVideoDecoder);
     if (!SUCCEEDED(hr)) {
         printf("#### ERROR: CreateVideoDecoder failed\n");
