@@ -153,7 +153,7 @@ uint64_t pyCreateVideoDecoder(std::string guid, uint32_t w, uint32_t h, uint64_t
     decoderDesc.SampleHeight = h;
     decoderDesc.OutputFormat = (DXGI_FORMAT)fmt;
     D3D11_VIDEO_DECODER_CONFIG config = { 0 };
-    config.ConfigBitstreamRaw = 2; // 0: long format; 1: short format
+    config.ConfigBitstreamRaw = 2; // 0: long format; 2: short format
     hr = pD3D11VideoDevice->CreateVideoDecoder(&decoderDesc, &config, &pVideoDecoder);
     if (!SUCCEEDED(hr)) {
         printf("#### ERROR: CreateVideoDecoder failed\n");
