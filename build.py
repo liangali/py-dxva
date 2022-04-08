@@ -34,6 +34,7 @@ if __name__ == '__main__':
         elif sys.argv[1] == 'gen':
             run_cmake()
         elif sys.argv[1] == 'all':
+            run_clean()
             run_cmake()
             run_vsbuild()
     else:
